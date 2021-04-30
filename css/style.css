@@ -1,0 +1,169 @@
+html,body {
+  padding: 0;
+  margin: 0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  align-items: stretch;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.col-editor {
+  flex: 1;
+}
+
+.col-preview {
+  width: 150px;
+  border-left: 1px solid #b1b1b1;
+  background-color: rgba(0, 0, 0, .5);
+}
+
+.col-preview.is-animated {
+  animation: slideout .2s forwards;
+}
+
+.col-preview.is-animated.is-show {
+  animation: slidein .2s forwards;
+}
+
+@keyframes slidein {
+  from {
+    width: 150px;
+  }
+  to {
+    width: 40%;
+  }
+}
+
+@keyframes slideout {
+  from {
+    width: 40%;
+  }
+  to {
+    width: 150px;
+  }
+}
+
+.col-editor {
+  display: flex;
+  flex-direction: column;
+  padding: 40px 60px 60px;
+  background: #f5f5f5;
+}
+
+.col-editor > .title,
+.col-editor > .editor {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto 20px;
+}
+
+.col-editor > .title {
+  font-size: 26px;
+  color: #333333;
+}
+
+.col-editor > .editor {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border: 1px solid #b1b1b1;
+}
+
+.editor__menu {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #b1b1b1;
+  background: #ffffff;
+}
+
+.editor__menu .menubar {
+  display: flex;
+  align-items: center;
+}
+
+#editor-menu .el-button {
+  padding: 8px;
+}
+
+.el-button > i {
+  font-size: 16px;
+}
+
+#clean-menu {
+  justify-content: flex-end;
+}
+
+.el-button-group + .el-button-group {
+  margin-left: 10px;
+}
+
+.editor__box {
+  position: relative;
+  flex: 1;
+}
+
+#code {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.col-preview {
+  position: relative;
+  display: flex;
+  padding: 56px 45px 32px;
+}
+
+.col-preview > .preview {
+  width: 100%;
+  min-width: 480px;
+  max-width: 800px;
+  margin: 0;
+  padding: 20px;
+  border-radius: 5px;
+  background-color: #ffffff;
+}
+
+.col-preview > .el-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 15px;
+}
+
+#refresh-preview {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+#toggle-preview {
+  top: 50%;
+  padding: 14px 6px;
+  transform: translate(-100%, -50%);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#preview_window {
+  width: 100%;
+  height: 100%;
+}

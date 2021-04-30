@@ -1,154 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="./css/bootstrap.min.css">
-    <link rel="stylesheet" href="./css/custom.css">
-    <title>Word to Html</title>
-  </head>
-  <body>
-    <h1>Word 转 HTML</h1>
-    <div class="layout-container">
-      <div class="sidebar">
-        <div class="option-area">
-          <h3 class="option-title">图片设置：</h3>
-          <form class="options" id="image-options">
-            <div class="option-item">
-              <label for="img_path">图片路径：</label>
-              <input id="img_path" name="img_path" type="text" value="/media/img/">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Word to HTML</title>
+  <link rel="stylesheet" href="../node_modules/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="../node_modules/codemirror/theme/material.css">
+  <link rel="stylesheet" href="../node_modules/element-ui/lib/theme-chalk/index.css">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="col-editor" id="col-editor">
+      <h1 class="title">Word to HTML</h1>
+      <div class="editor">
+        <div class="editor__menu">
+          <div class="menubar" id="editor-menu">
+            <div class="el-button-group">
+              <button id="btn-undo" type="button" class="el-button el-button--small" title="撤销"><i class="el-icon-back"></i></button>
+              <button id="btn-clear" type="button" class="el-button el-button--small" title="清空"><i class="el-icon-delete"></i></button>
+              <button id="btn-beautify" type="button" class="el-button el-button--small" title="格式化"><i class="el-icon-s-fold"></i></button>
+              <button id="btn-wrap" type="button" class="el-button el-button--small" title="切换自动换行"><i class="el-icon-s-unfold"></i></button>
             </div>
-            <div class="option-item">
-              <input id="lightbox" name="lightbox" type="checkbox" checked="checked">
-              <label for="lightbox">点击放大 (Lightbox)</label>
-            </div>
-            <div class="option-item">
-              <input id="lazyload" name="lazyload" type="checkbox" checked="checked">
-              <label for="lazyload">懒加载 (Lazyload)</label>
-            </div>
-            <div class="option-item flexwrap">
-              <div class="option-item">生成样式：</div>
-              <div class="option-item"><input id="gallery" name="gallery_style" type="radio" checked="checked" value="gallery"><label for="gallery">图册 (默认)</label></div>
-              <div class="option-item"><input id="carousel" name="gallery_style" type="radio" value="carousel" disabled><label for="carousel">轮播图</label></div>
-            </div>
-          </form>
-        </div>
-        <div class="option-area">
-          <h3 class="option-title">列表设置：</h3>
-          <form class="options" id="list-options">
-            <div class="option-item flexwrap">
-              <div class="option-item">列表类型：</div>
-              <div class="option-item"><input id="unordered" name="list_type" type="radio" checked="checked" value="ul"><label for="unordered">无序列表</label></div>
-              <div class="option-item"><input id="ordered" name="list_type" type="radio" value="ol"><label for="ordered">有序列表</label></div>
-            </div>
-            <div class="option-item flexwrap">
-              <div class="option-item">生成样式：</div>
-              <div class="option-item"><input id="list" name="list_style" type="radio" checked="checked" value="list"><label for="list">列表 (默认)</label></div>
-            </div>
-          </form>
-        </div>
-        <div class="option-area">
-          <h3 class="option-title">表格设置：</h3>
-          <form class="options" id="table-options">
-            <div class="option-item">
-              <input id="wrap-table" name="wrap_table" type="checkbox" checked="checked">
-              <label for="wrap-table">使用 div 包裹表格，并添加类：</label>
-            </div>
-            <div class="option-item">
-              <input id="wrapper-class" name="wrapper_class" type="text" value="table-wrapper">
-            </div>
-          </form>
-        </div>
-      </div>
-      <div class="main-content">
-        <div class="row">
-          <div class="col-5">
-            <textarea id="inarea"></textarea>
           </div>
-          <div class="col-2 align-self-center btn-col">
-            <button type="button" class="btn btn-info btn-lg single" id="analyze">生成 > </button>
-            <button type="button" class="btn btn-info btn-lg single" id="clear">清空 > </button>
+          <div class="menubar" id="clean-menu">
+            <div class="el-button-group">
+              <button id="btn-clean" type="button" class="el-button el-button--primary el-button--medium is-round">
+                <i class="el-icon-s-open"></i> <span>清理 &amp; 转换</span>
+              </button>
+              <button id="btn-options" type="button" class="el-button el-button--primary el-button--medium is-circle">
+                <i class="el-icon-s-tools"></i>
+              </button>
+            </div>
           </div>
-          <div class="col-5">
-            <textarea id="outarea"></textarea>
-          </div>
+        </div>
+        <div class="editor__box">
+          <div id="code"></div>
         </div>
       </div>
     </div>
-    <script src="js/jquery.min.js"></script>
-    <script src="js/underscore.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/html-parser.js"></script>
-    <script src="js/dochtml.js"></script>
-    <script src="js/bundle.js"></script>
-    <script>
-      var log = console.log;
+    <div class="col-preview" id="col-preview">
+      <button id="refresh-preview" class="el-button el-button--danger el-button--small" title="刷新预览窗口"><i class="el-icon-refresh"></i></button>
+      <button id="toggle-preview" class="el-button el-button--danger el-button--small" title="显示 / 隐藏预览窗口"><i class="el-icon-arrow-left"></i></button>
+      <div class="preview">
+        <iframe id="preview_window" name="preview_window" src="" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
 
-      window.addEventListener('DOMContentLoaded', function() {
+  <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="../node_modules/underscore/underscore-min.js"></script>
 
-        bundle($('.sidebar-switcher'), $('.sidebar-panel'));
+  <script src="../node_modules/codemirror/lib/codemirror.js"></script>
+  <script src="../node_modules/codemirror/mode/xml/xml.js"></script>
+  <script src="../node_modules/codemirror/mode/javascript/javascript.js"></script>
+  <script src="../node_modules/codemirror/mode/css/css.js"></script>
+  <script src="../node_modules/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+  <script src="../node_modules/js-beautify/js/lib/beautify-html.js"></script>
 
-        function getById( id ) {
-          return document.getElementById(id);
-        }
+  <script src="./js/html-parser.js"></script>
+  <script src="./js/dochtml.js"></script>
 
-        function getFormData (id) {
-          var data = {};
-          var form = getById(id);
-          (new FormData(form)).forEach(function(val, key) {
-            data[key] = val;
-          })
-          return data;
-        } 
+  <script>
+    const codebox = document.getElementById('code');
 
-        var input       = getById('inarea'),
-            output      = getById('outarea'),
-            analyzeBtn  = getById('analyze'),
-            clearBtn    = getById('clear');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnBeautify = document.getElementById('btn-beautify');
+    const btnClear = document.getElementById('btn-clear');
+    const btnWrap = document.getElementById('btn-wrap');
 
-        input.simplify = function() {
+    const colPreview = document.getElementById('col-preview');
+    const btnTogglePreview = document.getElementById('toggle-preview');
+    const btnRefreshPreview = document.getElementById('refresh-preview');
+    const previewWindow = document.getElementById('preview_window');
+    const iframeDoc = previewWindow.contentWindow.document;
 
-          this.docHtml = new DocHtml(this._source, {
-            image: getFormData('image-options'),
-            list: getFormData('list-options'),
-            table: getFormData('table-options'),
-            other: {},
-          });
+    btnTogglePreview.onclick = function() {
+      colPreview.classList.add('is-show')
+      colPreview.classList.add('is-animated')
+      btnTogglePreview.onclick = function() {
+        colPreview.classList.toggle('is-show')
+      }
+    }
 
-          this.docHtml.simplify();
-          return this.docHtml.html;
-        };
+    function cleanHtml(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html")
+      html = doc.body.innerHTML
+      // return html
 
-        input.addEventListener('paste', function(e){
-          console.log('text/xml');
-          console.log(e.clipboardData.getData('text/xml'));
-          console.log('application/xml');
-          console.log(e.clipboardData.getData('application/xml'));
-          console.log('application/xhtml+xml');
-          console.log(e.clipboardData.getData('application/xhtml+xml'));
-          console.log('text/html');
-          console.log(e.clipboardData.getData('text/html'));
-          return;
-
-          var source = e.clipboardData.getData('text/html');
-          if (!source.trim()) {
-            source = this.value;
-          }
-          source = source.trim();
-          this._source = source;
-        });
-
-        analyzeBtn.onclick = function() {
-          output.value += input.simplify();
-          input.value = '';
-          input.docContent = null;
-        };
-
-        clearBtn.onclick = function() {
-          output.value = '';
-        };
-        
+      const htmldoc = new DocHtml(html, {
+        image: {},
+        list: {},
+        table: {},
+        other: {},
       });
-    </script>
-  </body>
+
+      htmldoc.simplify();
+      return htmldoc.html;
+    }
+
+    const editor = CodeMirror(document.getElementById('code'), {
+      value: '',
+      mode:  "htmlmixed",
+      lineNumbers: true,
+      tabSize: 2,
+      theme: 'material',
+      lineWrapping: true,
+    });
+
+    const editor_doc = editor.getDoc();
+
+    editor.setSize('100%','100%');
+    editor.on('paste', function(cm, e) {
+      e.preventDefault()
+      let source = e.clipboardData.getData('text/html').trim();
+      if (source) {
+        source = cleanHtml(source)
+      } else {
+        source = e.clipboardData.getData('text/plain')
+      }
+      editor_doc.replaceRange(source, editor_doc.getCursor())
+    })
+
+    function switchOption(optionName) {
+      editor.setOption(optionName, !editor.getOption(optionName))
+    }
+
+    btnUndo.onclick = function() {
+      editor_doc.undo()
+    }
+
+    btnBeautify.onclick = function() {
+      let content = html_beautify(editor_doc.getValue(), {
+        "indent_size": "2",
+        "indent_char": " ",
+        "max_preserve_newlines": "5",
+        "preserve_newlines": true,
+        "keep_array_indentation": false,
+        "break_chained_methods": false,
+        "indent_scripts": "normal",
+        "brace_style": "collapse",
+        "space_before_conditional": true,
+        "unescape_strings": false,
+        "jslint_happy": false,
+        "end_with_newline": false,
+        "wrap_line_length": "0",
+        "indent_inner_html": false,
+        "comma_first": false,
+        "e4x": false,
+        "indent_empty_lines": false
+      }).replace(/&nbsp;| /g, ' ');
+      editor_doc.setValue(content)
+    }
+
+    btnClear.onclick = function() {
+      editor_doc.setValue('')
+    }
+
+    btnWrap.onclick = function() {
+      switchOption('lineWrapping')
+    }
+
+    function refreshPreview() {
+      iframeDoc.write(editor_doc.getValue() + `
+<script>
+  document.querySelectorAll('a[href]').forEach(function(el){
+    el.onclick = function(e){ e.preventDefault() }
+  })
+<\/script>`)
+      iframeDoc.close()
+    }
+
+    editor.on('change', function(cm, e) {
+      refreshPreview()
+    })
+
+    btnRefreshPreview.onclick = function() {
+      refreshPreview()
+    }
+
+    refreshPreview();
+
+    // 编辑器宽度变化时刷新
+    (function() {
+      let width = codebox.offsetWidth;
+      setInterval(function() {
+        if (width !== codebox.offsetWidth) {
+          width = codebox.offsetWidth
+          editor.refresh()
+        }
+      }, 200)
+    })();
+
+  </script>
+</body>
 </html>

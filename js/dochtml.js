@@ -52,7 +52,7 @@ function hueFromRGB(r, g, b) {
   var max = Math.max(r, g, b), min = Math.min(r, g, b);
   var h;
 
-  if (max == min){ 
+  if (max == min){
     h = 0; // achromatic
   } else {
     var c = max - min;
@@ -81,7 +81,7 @@ function DocHtml(html, options) {
 
   html = html || '';
   this._source = html;
-  log( 'source: ' + html );
+  // log( 'source: ' + html );
 
   this.init(options);
 
@@ -92,8 +92,8 @@ var dh_proto = DocHtml.prototype;
 
 dh_proto.do = function( fn ) {
 
-  log('Open: '+fn);
-  console.time('Do: '+fn);
+  // log('Open: '+fn);
+  // console.time('Do: '+fn);
 
   var args = _.toArray(arguments).slice(1);
 
@@ -101,7 +101,7 @@ dh_proto.do = function( fn ) {
     this[fn].apply(this, args);
   }
 
-  console.timeEnd('Do: '+fn);
+  // console.timeEnd('Do: '+fn);
   // log('End: '+fn);
 
   return this;
@@ -176,7 +176,7 @@ dh_proto.init = function (options) {
 // 主函数
 dh_proto.simplify = function() {
 
-  console.time('Do: simplify');
+  // console.time('Do: simplify');
 
   // 初始的清理工作
   // 包括清理空标签，移除文档头信息，清除注释、无用标签，简化标签属性等
@@ -230,7 +230,7 @@ dh_proto.simplify = function() {
   this.html = this._tokens.toString();
 
   // log(this.html);
-  console.timeEnd('Do: simplify');
+  // console.timeEnd('Do: simplify');
 
   return this;
 };
@@ -313,7 +313,7 @@ dh_proto.cleanUp = function() {
 
   // 清除空标签
   this.do('clearEmptyTags');
-  
+
   // 移除文档头信息
   this.do('removeHead');
 
@@ -377,7 +377,7 @@ dh_proto.cleanUp = function() {
         var hue = hueFromRGB.apply(null, rgbToArray(style['color']));
         if (hue) attr['s-hue'] = '' + hue;
       }
-      // 当 mso-list 存在时，使用属性 s-indent 保存 margin-left 值, 
+      // 当 mso-list 存在时，使用属性 s-indent 保存 margin-left 值,
       if (_.has(style, 'mso-list')) {
         attr['s-indent'] = '' + (parseFloat(style['margin-left']) || 0);
       }
@@ -587,7 +587,7 @@ dh_proto.clearMemos = function() {
           if (id = toBeRemoved[i].attr('id')) {
             target.attr('id', id);
             break;
-          } 
+          }
         }
         list.remove(toBeRemoved);
         break;
@@ -700,7 +700,8 @@ dh_proto.convertList = function () {
     var prev, li;
     if (node.attr('s-indent')) {
       node.tagRename('li');
-    } else if (prev = node.prevSibling('li')) {
+    } else if ((prev = node.prevSibling('li')) && prev.attr('s-indent')) {
+      console.log(prev)
       var phrasingTags = prev.findAll(function(node) {
         return isNonPhrasingTag(node.tagName);
       });
@@ -718,7 +719,9 @@ dh_proto.convertList = function () {
   // 依据 s-indent 值构建具备层级关系的列表
   this._tokens.each(function (node, list) {
 
-    if (!node.is('li.TAG_START')) return true;
+    if (!node.is('li.TAG_START') || !node.attr('s-indent')) {
+      return true;
+    }
 
     var next = node.next;
 
@@ -749,7 +752,7 @@ dh_proto.convertList = function () {
 
   // 清除所有 s-indent 属性
   this._tokens.each(function(node, list) {
-    if (node.type === 'TAG_START' && node.attr('s-indent')) {
+    if (node.is('li.TAG_START') && node.attr('s-indent')) {
       node.attr('s-indent', '');
     }
   });
@@ -891,11 +894,11 @@ dh_proto.rebuildTable = function () {
       // log(table);
       // return true;
 
-      var caption = [], 
-        thead = [], 
+      var caption = [],
+        thead = [],
         tbody = [];
 
-      // 生成 caption 
+      // 生成 caption
       var tableLen = table[0].length;
       if (table[0][0].colspan === tableLen && table[0][0].tagName === 'th') {
         caption = table[0][0].nodeArray.slice(1,-1);
@@ -1059,7 +1062,7 @@ dh_proto.rebuildTable = function () {
   // 当某一行的全部节点符合以下任意一个特征
   //  1. 节点.isEmpty === true
   //  2. 节点 === undefined
-  //  3. 节点相同位置的元素的 clone 
+  //  3. 节点相同位置的元素的 clone
   // 则认为该行是可消除的
 
   function mergeTableRow (table, spantype) {
@@ -1096,7 +1099,7 @@ dh_proto.rebuildTable = function () {
       var empty = true;
       for (var i = 0; i < row.length; i++) {
         if (row[i] && !row[i].isEmpty && row[i] !== another[i]) {
-          empty = false; 
+          empty = false;
           break
         }
       }
