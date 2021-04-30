@@ -92,7 +92,7 @@ var dh_proto = DocHtml.prototype;
 
 dh_proto.do = function( fn ) {
 
-  // log('Open: '+fn);
+  // log('Start: '+fn);
   // console.time('Do: '+fn);
 
   var args = _.toArray(arguments).slice(1);
@@ -102,7 +102,7 @@ dh_proto.do = function( fn ) {
   }
 
   // console.timeEnd('Do: '+fn);
-  // log('End: '+fn);
+  // log('Done: '+fn);
 
   return this;
 };
@@ -110,25 +110,15 @@ dh_proto.do = function( fn ) {
 // ...
 dh_proto.init = function (options) {
 
-  var defaults = {
-    image: {
-      img_path: '/images/',
-      gallery_style: 'gallery',
-      lightbox: 'on',
-      'lazyload': 'on',
-    },
-    list: {
-      list_style: 'list',
-      list_type: 'ul',
-    },
-    table: {
-      wrap_table: 'on',
-      wrapper_class: 'table-wrapper',
-    },
-    other: {},
-  };
-
-  this.options = _.extend(defaults, options);
+  this.options = _.extend({
+    img_path: '/media/img/',
+    img_lightbox: true,
+    img_lazyload: true,
+    list_type: 'ul',
+    table_class: 'k-table',
+    table_wrapper: true,
+    table_wrapper_class: 'table-wrapper',
+  }, options);
 
   // log(this.options);
 
@@ -210,6 +200,8 @@ dh_proto.simplify = function() {
 
   /* 收尾 */
 
+  this.do('cleanTableInner');
+
   this.do('wrapTable');
 
   // 将 <p><b> ... </b></p> 结构转换为 <h2> ... </h2>
@@ -221,10 +213,11 @@ dh_proto.simplify = function() {
   this.do('settlePuncs');
 
   // 最后一次清理空标签
-  this.do('clearEmptyTags', 'br');
+  // this.do('clearEmptyTags', 'br');
+  this.do('clearEmptyTags');
 
   // 最后一次清理 br 标签;
-  this.do('clearBr');
+  // this.do('clearBr');
 
   // this.do('switchTo', 'html');
   this.html = this._tokens.toString();
@@ -242,16 +235,13 @@ dh_proto.simplify = function() {
 dh_proto.clearEmptyTags = function (empty) {
 
   this._tokens.each(function (node, list) {
-    switch (node.type) {
-      case 'TAG_END':
-        if (node.prevSolid('', empty) === node.match && !node.is('td,th,div')) {
-          if (node.tagName === 'p') list.createSingle('br').insertBefore(node.match);
-          list.remove(node.match, node);
-        }
-        break
-      default: break
+    if (node.type !== 'TAG_END') {
+      return true;
     }
-    return true;
+    if (node.prevSolid('', empty) === node.match && !node.is('td,th,div')) {
+      // if (node.tagName === 'p') list.createSingle('br').insertBefore(node.match);
+      list.remove(node.match, node);
+    }
   });
 
   /**
@@ -309,7 +299,7 @@ dh_proto.removeHead = function () {
 dh_proto.cleanUp = function() {
 
   // ...
-  this.do('clearBr');
+  // this.do('clearBr');
 
   // 清除空标签
   this.do('clearEmptyTags');
@@ -700,8 +690,7 @@ dh_proto.convertList = function () {
     var prev, li;
     if (node.attr('s-indent')) {
       node.tagRename('li');
-    } else if ((prev = node.prevSibling('li')) && prev.attr('s-indent')) {
-      console.log(prev)
+    } else if (prev = node.prevSibling('li')) {
       var phrasingTags = prev.findAll(function(node) {
         return isNonPhrasingTag(node.tagName);
       });
@@ -713,15 +702,12 @@ dh_proto.convertList = function () {
     return true
   });
 
-  var listOptions = this.options.list || {};
-  var listType = listOptions.list_type || 'ul';
+  var listType = this.options.list_type || 'ul';
 
   // 依据 s-indent 值构建具备层级关系的列表
   this._tokens.each(function (node, list) {
 
-    if (!node.is('li.TAG_START') || !node.attr('s-indent')) {
-      return true;
-    }
+    if (!node.is('li.TAG_START')) return true;
 
     var next = node.next;
 
@@ -752,12 +738,12 @@ dh_proto.convertList = function () {
 
   // 清除所有 s-indent 属性
   this._tokens.each(function(node, list) {
-    if (node.is('li.TAG_START') && node.attr('s-indent')) {
+    if (node.type === 'TAG_START' && node.attr('s-indent')) {
       node.attr('s-indent', '');
     }
   });
 
-  if (listOptions.list_style === 'specification') {
+  if (this.options.list_type === 'specification') {
     this._tokens.each(function(node, list) {
       if (node.tagName === 'ul' && node.type === 'TAG_START') {
         node.wrap('div').addClass('specification');
@@ -802,7 +788,8 @@ dh_proto.rebuildTable = function () {
         break;
       case 'TAG_SINGLE':
         if (!last) break;
-        if (node.tagName === 'img' || node.tagName === 'br') node.remove();
+        // if (node.tagName === 'img' || node.tagName === 'br') node.remove();
+        if (node.tagName === 'img') node.remove();
         break;
       case 'TAG_END':
         if (!last) break;
@@ -837,25 +824,16 @@ dh_proto.rebuildTable = function () {
       }
 
       var textAll = node.findAll('.TEXT');
-      var isth = !!textAll.length;
-      for (var i = 0; i < textAll.length; i++) {
-        if(textAll[i].source.replace(/\W/g, '') && !textAll[i].topWrapper('b')) {
-          isth = false;
-          break;
-        }
-      }
-      if (isth) {
-        node.tagRename('th');
-        list.remove(node.findAll('b'));
-        var pArray = node.findAll('p');
-        if (pArray.length) {
-          for (var i = 1; i < pArray.length; i+=2) {
-            if(pArray[i].nextSolid() !== node) {
-              pArray[i].afterInsert(list.createSingle('br'));
-            }
+      if (textAll.length > 1) {
+        var hasB = false;
+        for (var i = 0; i < textAll.length; i++) {
+          if (textAll[i].topWrapper('b')) {
+            hasB = true
+          } else if(textAll[i].source.replace(/\W/g, '')) {
+            return true
           }
-          list.remove(pArray);
         }
+        hasB && node.tagRename('th');
       }
     }
   });
@@ -1108,6 +1086,28 @@ dh_proto.rebuildTable = function () {
   }
 };
 
+// 清理表格单元格内部
+dh_proto.cleanTableInner = function () {
+  this._tokens.each(function(node, list) {
+    if (node.is('td.TAG_END, th.TAG_END, caption.TAG_END')) {
+
+      var pArray = node.findAll('p.TAG_END');
+      pArray.pop();
+      if (pArray.length) {
+        for (var i = 0; i < pArray.length; i++) {
+          pArray[i].afterInsert(list.createSingle('br'));
+        }
+      }
+
+      list.remove(node.findAll('p'));
+
+      if (node.tagName === 'th' || node.tagName === 'caption') {
+        list.remove(node.findAll('b'));
+      }
+    }
+  });
+};
+
 /**
  * 假设：
  * 1. 图片信息都在 td 标签内
@@ -1115,14 +1115,14 @@ dh_proto.rebuildTable = function () {
  */
 dh_proto.convertImages = function () {
 
-  var imageOptions = this.options.image || {};
-
   var marks = [
     ['img_name',  /(?:图片名称|图片名|名称|图片文件|图片文件名称|文件名称?)\s*:\s*/i],
     ['img_alt',   /alt\s*:\s*/i],
     ['img_info',  /(?:描述|简述)\s*:\s*/i],
     ['img_title', /(?:(?:图片)?标题|显示名称)\s*:\s*/i]
   ];
+
+  var opts = this.options;
 
   var content = '';
   this._tokens.each(function(node, list) {
@@ -1163,20 +1163,20 @@ dh_proto.convertImages = function () {
     var data = list.create('', 'DATA');
     data.subtype = 'image';
     data.fields = fields;
-    data.fields['img_path'] = imageOptions['img_path'] || '/images/';
+    data.fields['img_path'] = opts.img_path || '/media/img/';
     data.fields['lightbox'] = 'lb';
 
     data.template = '<img src="{img_path}{img_name}" alt="{img_alt}">';
 
-    if (imageOptions.lazyload === 'on') {
-      if (imageOptions.gallery_style === 'carousel') {
+    if (opts.img_lazyload === 'on') {
+      if (opts.img_gallery === 'carousel') {
         data.template = '<img class="owl-lazy" data-src="{img_path}{img_name}" alt="{img_alt}">';
       } else {
         data.template = '<img class="lazyload" data-src="{img_path}{img_name}" alt="{img_alt}">';
       }
     }
 
-    if (imageOptions.lightbox === 'on') {
+    if (opts.img_lightbox) {
       data.template = '<a data-lightbox="{lightbox}" href="{img_path}{img_name}">' + data.template + '</a>';
     }
 
@@ -1203,7 +1203,7 @@ dh_proto.arrangeImages = function () {
   // ...
   this.do('convertImages');
 
-  var imageOptions = this.options.image || {};
+  var opts = this.options;
   var list = this._tokens;
 
   // ...
@@ -1266,7 +1266,7 @@ dh_proto.arrangeImages = function () {
     if (collections.length) {
       for (i = 0; i < collections.length; i++) {
         if(collections[i].type === 'gallery') {
-          if (imageOptions.gallery_style === 'carousel') {
+          if (opts.img_gallery === 'carousel') {
             tableStart.beforeInsert(makeCarousel(collections[i].collect));
           } else {
             tableStart.beforeInsert(makeGallery(collections[i].collect));
@@ -1385,15 +1385,17 @@ dh_proto.arrangeImages = function () {
 
 // ...
 dh_proto.wrapTable = function () {
-  if (this.options && this.options.table && this.options.table.wrap_table === 'on') {
-    var clsName = this.options.table.wrapper_class || 'table-wrapper';
-    this._tokens.each(function(node, list){
-      if (node.tagName === 'table' && node.type === 'TAG_END') {
-        node.addClass('k-table');
-        node.wrap('div').addClass(clsName);
+  var tableClass = this.options.table_class;
+  var wrapTable = this.options.table_wrapper;
+  var wrapperClass = this.options.table_wrapper_class;
+  this._tokens.each(function(node, list){
+    if (node.tagName === 'table' && node.type === 'TAG_END') {
+      tableClass && node.addClass(tableClass);
+      if (wrapTable) {
+        wrapperClass ? node.wrap('div').addClass(wrapperClass) : node.wrap('div');
       }
-    });
-  }
+    }
+  });
 };
 
 // 移动行内标签头尾的标点符号和空格到合适的位置
@@ -1408,62 +1410,46 @@ dh_proto.settlePuncs = function () {
     node.source = node.source.replace(/\s+/g, ' ');
 
     var match;
+
+    // 前面的标点往前移
     var sibling = node.prev;
     if (sibling.type === 'TAG_START') {
       if (isInline(sibling.tagName) && (match = node.source.match(/^[\s,\.?;:!]+/))) {
         node.source = node.source.substring(match[0].length);
-        sibling = node.prev;
-        while(true) {
-          if (!sibling.type) break;
-          if (sibling.type === 'TAG_START') {
-            if (isInline(sibling.tagName)) {
-              sibling = sibling.prev;
-              continue
-            } else {
-              break
-            }
+        // sibling = node.prev;
+        while(sibling.prev) {
+          sibling = sibling.prev;
+          if (sibling.type === 'TAG_START' && isInline(sibling.tagName)) {
+            continue;
           }
-          if (sibling.type === 'TAG_END') {
-            if (isInline(sibling.tagName)) {
-              sibling.afterInsert(list.create(match[0]));
-            }
-            break
-          }
-          if (sibling.type === 'TEXT') {
-            sibling.source = (sibling.source + match[0]).replace(/\s+/, ' ');
-            break
-          }
+          break;
+        }
+        if (sibling.type === 'TEXT') {
+          sibling.source = (sibling.source + match[0]).replace(/\s+/, ' ');
+        } else {
+          sibling.afterInsert(list.create(match[0]));
         }
       } else if (!isInline(node.tagName) && (match = node.source.match(/^\s+/))) {
         node.source = node.source.substring(match[0].length);
       }
     }
 
+    // 后面的标点往后移
     sibling = node.next;
     if (sibling.type === 'TAG_END') {
       if (isInline(sibling.tagName) && (match = node.source.match(/[\s,\.?;:!]+$/))) {
         node.source = node.source.substring(0, match.index);
-        sibling = node.next;
-        while(true) {
-          if (!sibling.type) break;
-          if (sibling.type === 'TAG_END') {
-            if (isInline(sibling.tagName)) {
-              sibling = sibling.next;
-              continue
-            } else {
-              break
-            }
+        while(sibling.next) {
+          sibling = sibling.next;
+          if (sibling.type === 'TAG_END' && isInline(sibling.tagName)) {
+            continue;
           }
-          if (sibling.type === 'TAG_START') {
-            if (isInline(sibling.tagName)) {
-              sibling.beforeInsert(list.create(match[0]));
-            }
-            break
-          }
-          if (sibling.type === 'TEXT') {
-            sibling.source = match[0] + sibling.source;
-            break
-          }
+          break;
+        }
+        if (sibling.type === 'TEXT') {
+          sibling.source = match[0] + sibling.source;
+        } else {
+          sibling.beforeInsert(list.create(match[0]));
         }
       } else if (!isInline(node.tagName) && /\s+$/.test(node.source)) {
         node.source = node.source.replace(/\s+$/, '');
@@ -1471,7 +1457,8 @@ dh_proto.settlePuncs = function () {
     }
   });
 
-  this.clearEmptyTags('br');
+  // this.clearEmptyTags('br');
+  this.clearEmptyTags();
 
   return this
 };

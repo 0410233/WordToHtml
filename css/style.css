@@ -60,40 +60,44 @@ html,body {
 .col-editor {
   display: flex;
   flex-direction: column;
-  padding: 40px 60px 60px;
+  padding: 20px 60px 40px;
   background: #f5f5f5;
 }
 
-.col-editor > .title,
-.col-editor > .editor {
+.editor__caption,
+.editor__head,
+.editor__body {
   width: 100%;
   max-width: 1120px;
-  margin: 0 auto 20px;
+  margin-left: auto;
+  margin-right: auto;
+  /* margin: 0 auto; */
 }
 
-.col-editor > .title {
+.editor__caption {
   font-size: 26px;
   color: #333333;
 }
 
-.col-editor > .editor {
+/* .editor__head {
   position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  border: 1px solid #b1b1b1;
-}
+  border: 1px solid #263238
+} */
 
-.editor__menu {
+.editor__head {
   display: flex;
   justify-content: space-between;
   padding: 10px 20px;
   border-bottom: 1px solid #b1b1b1;
   background: #ffffff;
+  border: 1px solid #263238;
 }
 
-.editor__menu .menubar {
+.editor__head .menubar {
   display: flex;
   align-items: center;
 }
@@ -102,9 +106,9 @@ html,body {
   padding: 8px;
 }
 
-.el-button > i {
+/* .col-editor .el-button i[class^="el-icon"] {
   font-size: 16px;
-}
+} */
 
 #clean-menu {
   justify-content: flex-end;
@@ -114,7 +118,7 @@ html,body {
   margin-left: 10px;
 }
 
-.editor__box {
+.editor__body {
   position: relative;
   flex: 1;
 }
@@ -128,7 +132,7 @@ html,body {
 .col-preview {
   position: relative;
   display: flex;
-  padding: 56px 45px 32px;
+  padding: 30px;
 }
 
 .col-preview > .preview {

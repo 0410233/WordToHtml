@@ -1,6 +1,6 @@
 /**
  * 简化版 html-parser
- * 假定： 
+ * 假定：
  *  1.没有未封闭的标签
  *  2.没有省略的或丢失的结束标签
  *  - 3.没有不合理的嵌套（偶尔存在不合理的嵌套）
@@ -22,7 +22,7 @@
  * - NOTAG_MSIF
  * - NOTAG_CNDT
  * - NOTAG
- * 
+ *
  * 扩展节点：
  * - MARK
  * - DATA
@@ -207,8 +207,8 @@ function removeNode (node) {
 // 使用 condition 检测一个 node
 function checkNode (node, condition) {
   var array = condition.trim().split('.');
-  return (!array[0] || node.tagName === array[0]) && 
-    (!array[1] || node.type === array[1]) && 
+  return (!array[0] || node.tagName === array[0]) &&
+    (!array[1] || node.type === array[1]) &&
     (!array[2] || node.subtype === array[2]);
 }
 
@@ -770,7 +770,7 @@ hn_proto.children = function () {
 
   var children = [];
   var isStartTag = makeMap('TAG_START, TAG_SINGLE', true);
-  
+
   var node = start.next;
   var end = start.match;
   while (node !== end) {
@@ -801,7 +801,7 @@ hn_proto.parent = function () {
     switch (node.type) {
       case '':
         return null;
-      case 'TAG_START': 
+      case 'TAG_START':
         return node;
       case 'TAG_END':
         node = node.match;
@@ -821,7 +821,7 @@ hn_proto.parents = function () {
     switch (node.type) {
       case '':
         return parents;
-      case 'TAG_START': 
+      case 'TAG_START':
         parents.push(node);
         break
       case 'TAG_END':
@@ -1082,7 +1082,7 @@ hl_proto.clear = function() {
     node.next = null;
     node.prev = null;
     node.list = null;
-    
+
     node = next;
   } while (node.next)
 
@@ -1195,7 +1195,7 @@ hl_proto.toString = function () {
 hl_proto.remove = function () {
 
   var _this = this;
-  var nodes = _.filter(_.flatten(_.toArray(arguments)), function(node) { 
+  var nodes = _.filter(_.flatten(_.toArray(arguments)), function(node) {
     if (node && node.list === _this) {
       node.list = null;
       return true

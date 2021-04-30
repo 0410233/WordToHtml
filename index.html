@@ -4,44 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Word to HTML</title>
-  <link rel="stylesheet" href="../node_modules/codemirror/lib/codemirror.css">
-  <link rel="stylesheet" href="../node_modules/codemirror/theme/material.css">
-  <link rel="stylesheet" href="../node_modules/element-ui/lib/theme-chalk/index.css">
-  <link rel="stylesheet" href="./css/style.css">
+  <title>Paste to HTML</title>
+  <link rel="stylesheet" href="./lib/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="./lib/codemirror/theme/material.css">
+  <link rel="stylesheet" href="./lib/element-ui/lib/theme-chalk/index.css">
+  <link rel="stylesheet" href="./src/css/style.css">
 </head>
 <body>
   <div class="container">
     <div class="col-editor" id="col-editor">
-      <h1 class="title">Word to HTML</h1>
-      <div class="editor">
-        <div class="editor__menu">
-          <div class="menubar" id="editor-menu">
-            <div class="el-button-group">
-              <button id="btn-undo" type="button" class="el-button el-button--small" title="撤销"><i class="el-icon-back"></i></button>
-              <button id="btn-clear" type="button" class="el-button el-button--small" title="清空"><i class="el-icon-delete"></i></button>
-              <button id="btn-beautify" type="button" class="el-button el-button--small" title="格式化"><i class="el-icon-s-fold"></i></button>
-              <button id="btn-wrap" type="button" class="el-button el-button--small" title="切换自动换行"><i class="el-icon-s-unfold"></i></button>
-            </div>
-          </div>
-          <div class="menubar" id="clean-menu">
-            <div class="el-button-group">
-              <button id="btn-clean" type="button" class="el-button el-button--primary el-button--medium is-round">
-                <i class="el-icon-s-open"></i> <span>清理 &amp; 转换</span>
-              </button>
-              <button id="btn-options" type="button" class="el-button el-button--primary el-button--medium is-circle">
-                <i class="el-icon-s-tools"></i>
-              </button>
-            </div>
+      <h1 class="editor__caption">Paste to HTML</h1>
+      <div class="editor__head">
+        <div class="menubar" id="editor-menu">
+          <div class="el-button-group">
+            <button id="btn-undo" type="button" class="el-button el-button--small" title="撤销"><i class="el-icon-back"></i> 撤销</button>
+            <button id="btn-clear" type="button" class="el-button el-button--small" title="清空"><i class="el-icon-delete"></i> 清空</button>
+            <button id="btn-beautify" type="button" class="el-button el-button--small" title="格式化"><i class="el-icon-s-fold"></i> 格式化</button>
+            <button id="btn-wrap" type="button" class="el-button el-button--small" title="切换自动换行"><i class="el-icon-s-unfold"></i> 切换自动换行</button>
           </div>
         </div>
-        <div class="editor__box">
-          <div id="code"></div>
+        <div class="menubar" id="clean-menu">
+          <el-button-group>
+            <el-button id="btn-clean" size="medium" round type="primary" icon="el-icon-s-open">清理 &amp; 转换</el-button>
+            <el-button id="btn-options" size="medium" round type="primary" icon="el-icon-s-tools" @click="dialogVisible = true"></el-button size="medium" round>
+          </el-button-group>
+
+          <el-dialog title="参数设置" :visible.sync="dialogVisible" append-to-body="true">
+            <el-form :model="form" :label-width="formLabelWidth">
+              <el-tabs tab-position="left" style="height: 200px;">
+                <el-tab-pane label="图片">
+                  <el-form-item label="图片路径：">
+                    <el-input v-model="form.img_path" autocomplete="off"></el-input>
+                  </el-form-item>
+                  <el-form-item label="点击放大：">
+                    <el-switch v-model="form.img_lightbox"></el-switch>
+                  </el-form-item>
+                  <el-form-item label="懒加载：">
+                    <el-switch v-model="form.img_lazyload"></el-switch>
+                  </el-form-item>
+                </el-tab-pane>
+                <el-tab-pane label="列表">
+                  <el-form-item label="列表类型：">
+                    <el-radio-group v-model="form.list_type">
+                      <el-radio label="ul">无序列表</el-radio>
+                      <el-radio label="ol">有序列表</el-radio>
+                    </el-radio-group>
+                  </el-form-item>
+                </el-tab-pane>
+                <el-tab-pane label="表格">
+                  <el-form-item label="表格类名：">
+                    <el-input v-model="form.table_class" autocomplete="off"></el-input>
+                  </el-form-item>
+                  <el-form-item label="表格外包 div：">
+                    <el-switch v-model="form.table_wrapper"></el-switch>
+                  </el-form-item>
+                  <el-form-item label="外包 div 类名:">
+                    <el-input v-model="form.table_wrapper_class" autocomplete="off" :disabled="!form.table_wrapper"></el-input>
+                  </el-form-item>
+                </el-tab-pane>
+              </el-tabs>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+              <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+            </div>
+          </el-dialog>
         </div>
+      </div>
+      <div class="editor__body">
+        <div id="code"></div>
       </div>
     </div>
     <div class="col-preview" id="col-preview">
-      <button id="refresh-preview" class="el-button el-button--danger el-button--small" title="刷新预览窗口"><i class="el-icon-refresh"></i></button>
+      <!-- <button id="refresh-preview" class="el-button el-button--danger el-button--small" title="刷新预览窗口"><i class="el-icon-refresh"></i></button> -->
       <button id="toggle-preview" class="el-button el-button--danger el-button--small" title="显示 / 隐藏预览窗口"><i class="el-icon-arrow-left"></i></button>
       <div class="preview">
         <iframe id="preview_window" name="preview_window" src="" frameborder="0"></iframe>
@@ -49,151 +83,21 @@
     </div>
   </div>
 
-  <script src="../node_modules/jquery/dist/jquery.min.js"></script>
-  <script src="../node_modules/underscore/underscore-min.js"></script>
+  <script src="./lib/jquery.slim.min.js"></script>
+  <script src="./lib/underscore-min.js"></script>
+  <script src="./lib/vue.min.js"></script>
+  <script src="./lib/element-ui/lib/index.js"></script>
 
-  <script src="../node_modules/codemirror/lib/codemirror.js"></script>
-  <script src="../node_modules/codemirror/mode/xml/xml.js"></script>
-  <script src="../node_modules/codemirror/mode/javascript/javascript.js"></script>
-  <script src="../node_modules/codemirror/mode/css/css.js"></script>
-  <script src="../node_modules/codemirror/mode/htmlmixed/htmlmixed.js"></script>
-  <script src="../node_modules/js-beautify/js/lib/beautify-html.js"></script>
+  <script src="./lib/js-beautify/js/lib/beautify-html.js"></script>
 
-  <script src="./js/html-parser.js"></script>
-  <script src="./js/dochtml.js"></script>
+  <script src="./lib/codemirror/lib/codemirror.js"></script>
+  <script src="./lib/codemirror/mode/xml/xml.js"></script>
+  <script src="./lib/codemirror/mode/javascript/javascript.js"></script>
+  <script src="./lib/codemirror/mode/css/css.js"></script>
+  <script src="./lib/codemirror/mode/htmlmixed/htmlmixed.js"></script>
 
-  <script>
-    const codebox = document.getElementById('code');
-
-    const btnUndo = document.getElementById('btn-undo');
-    const btnBeautify = document.getElementById('btn-beautify');
-    const btnClear = document.getElementById('btn-clear');
-    const btnWrap = document.getElementById('btn-wrap');
-
-    const colPreview = document.getElementById('col-preview');
-    const btnTogglePreview = document.getElementById('toggle-preview');
-    const btnRefreshPreview = document.getElementById('refresh-preview');
-    const previewWindow = document.getElementById('preview_window');
-    const iframeDoc = previewWindow.contentWindow.document;
-
-    btnTogglePreview.onclick = function() {
-      colPreview.classList.add('is-show')
-      colPreview.classList.add('is-animated')
-      btnTogglePreview.onclick = function() {
-        colPreview.classList.toggle('is-show')
-      }
-    }
-
-    function cleanHtml(html) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html")
-      html = doc.body.innerHTML
-      // return html
-
-      const htmldoc = new DocHtml(html, {
-        image: {},
-        list: {},
-        table: {},
-        other: {},
-      });
-
-      htmldoc.simplify();
-      return htmldoc.html;
-    }
-
-    const editor = CodeMirror(document.getElementById('code'), {
-      value: '',
-      mode:  "htmlmixed",
-      lineNumbers: true,
-      tabSize: 2,
-      theme: 'material',
-      lineWrapping: true,
-    });
-
-    const editor_doc = editor.getDoc();
-
-    editor.setSize('100%','100%');
-    editor.on('paste', function(cm, e) {
-      e.preventDefault()
-      let source = e.clipboardData.getData('text/html').trim();
-      if (source) {
-        source = cleanHtml(source)
-      } else {
-        source = e.clipboardData.getData('text/plain')
-      }
-      editor_doc.replaceRange(source, editor_doc.getCursor())
-    })
-
-    function switchOption(optionName) {
-      editor.setOption(optionName, !editor.getOption(optionName))
-    }
-
-    btnUndo.onclick = function() {
-      editor_doc.undo()
-    }
-
-    btnBeautify.onclick = function() {
-      let content = html_beautify(editor_doc.getValue(), {
-        "indent_size": "2",
-        "indent_char": " ",
-        "max_preserve_newlines": "5",
-        "preserve_newlines": true,
-        "keep_array_indentation": false,
-        "break_chained_methods": false,
-        "indent_scripts": "normal",
-        "brace_style": "collapse",
-        "space_before_conditional": true,
-        "unescape_strings": false,
-        "jslint_happy": false,
-        "end_with_newline": false,
-        "wrap_line_length": "0",
-        "indent_inner_html": false,
-        "comma_first": false,
-        "e4x": false,
-        "indent_empty_lines": false
-      }).replace(/&nbsp;| /g, ' ');
-      editor_doc.setValue(content)
-    }
-
-    btnClear.onclick = function() {
-      editor_doc.setValue('')
-    }
-
-    btnWrap.onclick = function() {
-      switchOption('lineWrapping')
-    }
-
-    function refreshPreview() {
-      iframeDoc.write(editor_doc.getValue() + `
-<script>
-  document.querySelectorAll('a[href]').forEach(function(el){
-    el.onclick = function(e){ e.preventDefault() }
-  })
-<\/script>`)
-      iframeDoc.close()
-    }
-
-    editor.on('change', function(cm, e) {
-      refreshPreview()
-    })
-
-    btnRefreshPreview.onclick = function() {
-      refreshPreview()
-    }
-
-    refreshPreview();
-
-    // 编辑器宽度变化时刷新
-    (function() {
-      let width = codebox.offsetWidth;
-      setInterval(function() {
-        if (width !== codebox.offsetWidth) {
-          width = codebox.offsetWidth
-          editor.refresh()
-        }
-      }, 200)
-    })();
-
-  </script>
+  <script src="./src/js/html-parser.js"></script>
+  <script src="./src/js/dochtml.js"></script>
+  <script src="./src/js/main.js"></script>
 </body>
 </html>
