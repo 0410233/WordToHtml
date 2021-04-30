@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/custom.css">
+    <title>Word to Html</title>
+  </head>
+  <body>
+    <h1>Word 转 HTML（v1.0）</h1>
+    <div class="layout-container">
+      <div class="sidebar sidebar-panel">
+        <div class="option-area">
+          <h3 class="option-title">图片设置：</h3>
+          <form class="options" id="image-options">
+            <div class="option-item">
+              <label for="img_path">图片路径：</label>
+              <input id="img_path" name="img_path" type="text" value="/images/">
+            </div>
+            <div class="option-item">
+              <input id="lightbox" name="lightbox" type="checkbox" checked="checked">
+              <label for="lightbox">Lightbox 效果</label>
+            </div>
+            <div class="option-item flexwrap">
+              <div class="option-item">
+                <input id="lazyload" name="lazyload" type="checkbox" checked="checked">
+                <label for="lazyload">懒加载 (Lazyload)</label>
+              </div>
+              <div class="option-item">
+                <label for="img_placeholder">默认图片： </label>
+                <input id="img_placeholder" name="img_placeholder" type="text" value="">
+              </div>
+            </div>
+            <div class="option-item flexwrap">
+              <div class="option-item">生成样式：</div>
+              <div class="option-item"><input id="gallery" name="gallery_style" type="radio" checked="checked" value="gallery"><label for="gallery">默认 (图册)</label></div>
+              <div class="option-item"><input id="carousel" name="gallery_style" type="radio" value="carousel"><label for="carousel">轮播图</label></div>
+            </div>
+            <div class="option-item flexwrap">
+              <div class="option-item">图片最大宽度：</div>
+              <div class="option-item">
+                <input id="max-none" name="img_max" type="radio" checked="checked" value="none"><label for="max-none">不限制</label>
+              </div>
+              <div class="option-item flexwrap">
+                <div class="option-item">
+                  <input id="max-class" name="img_max" type="radio" value="class"><label for="max-class">使用预定义宽：</label>
+                </div>
+                <div class="option-item">
+                  <select name="img_max_class">
+                    <option value="max-300">300px</option>
+                    <option value="max-400">400px</option>
+                    <option value="max-480" selected="selected">480px</option>
+                    <option value="max-600">600px</option>
+                    <option value="max-800">800px</option>
+                  </select>
+                </div>
+              </div>
+              <div class="option-item flexwrap">
+                <div class="option-item">
+                  <input id="max-width" name="img_max" type="radio" value="width"><label for="max-width">自定义宽度：</label>
+                </div>
+                <div class="option-item">
+                  <input type="number" name="max-width">
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="option-area">
+          <h3 class="option-title">列表设置：</h3>
+          <form class="options" id="list-options">
+            <div class="option-item flexwrap">
+              <div class="option-item">列表类型：</div>
+              <div class="option-item"><input id="unordered" name="list_type" type="radio" checked="checked" value="ul"><label for="unordered">无序列表</label></div>
+              <div class="option-item"><input id="ordered" name="list_type" type="radio" value="ol"><label for="ordered">有序列表</label></div>
+            </div>
+            <div class="option-item flexwrap">
+              <div class="option-item">生成样式：</div>
+              <div class="option-item"><input id="list" name="list_style" type="radio" checked="checked" value="list"><label for="list">默认 (列表)</label></div>
+              <div class="option-item"><input id="specification" name="list_style" type="radio" value="specification"><label for="specification">Specification (walcoom)</label></div>
+            </div>
+          </form>
+        </div>
+        <div class="option-area">
+          <h3 class="option-title">表格设置：</h3>
+          <form class="options" id="table-options">
+            <div class="option-item">
+              <input id="wrap-table" name="wrap_table" type="checkbox" checked="checked">
+              <label for="wrap-table">使用 div 包裹表格，并为该 div 添加类：</label>
+            </div>
+            <div class="option-item">
+              <input id="wrapper-class" name="wrapper_class" type="text" value="table-wrapper">
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="main-content">
+        <div class="row">
+          <div class="col-5">
+            <textarea id="inarea"></textarea>
+          </div>
+          <div class="col-2 align-self-center btn-col">
+            <button type="button" class="btn btn-info btn-lg single" id="analyze">生成 > </button>
+            <button type="button" class="btn btn-info btn-lg single" id="clear">清空 > </button>
+          </div>
+          <div class="col-5">
+            <textarea id="outarea"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/underscore.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/html-parser.js"></script>
+    <script src="js/dochtml.js"></script>
+    <script src="js/bundle.js"></script>
+    <script>
+      var log = console.log;
+
+      window.addEventListener('DOMContentLoaded', function() {
+
+        bundle($('.sidebar-switcher'), $('.sidebar-panel'));
+
+        function getById( id ) {
+          return document.getElementById(id);
+        }
+
+        function getFormData (id) {
+          var formData = new FormData(getById(id));
+          var data = {};
+          for (var entry of formData.entries()){
+            data[entry[0]] = entry[1];
+          }
+          return data;
+        } 
+
+        var input       = getById('inarea'),
+            output      = getById('outarea'),
+            analyzeBtn  = getById('analyze'),
+            clearBtn    = getById('clear');
+
+        input.simplify = function() {
+
+          this.docHtml = new DocHtml(this._source, {
+            image: getFormData('image-options'),
+            list: getFormData('list-options'),
+            table: getFormData('table-options'),
+            other: new FormData(),
+          });
+
+          this.docHtml.simplify();
+          return this.docHtml.html;
+        };
+
+        input.addEventListener('paste', function(e){
+          var source = e.clipboardData.getData('text/html');
+          if (!source.trim()) {
+            source = this.value;
+          }
+          source = source.trim();
+          this._source = source;
+        });
+
+        analyzeBtn.onclick = function() {
+          output.value += input.simplify();
+          input.value = '';
+          input.docContent = null;
+        };
+
+        clearBtn.onclick = function() {
+          output.value = '';
+        };
+        
+      });
+    </script>
+  </body>
+</html>
