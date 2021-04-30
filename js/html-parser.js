@@ -8,19 +8,22 @@
  */
 
 /**
- * 标签节点类型：
+ * 标签节点：
  * - TAG_START
  * - TAG_END
  * - TAG_SINGLE
  *
- * 非标签节点类型：
+ * 文本节点：
+ * - TEXT
+ *
+ * 非标签节点：
+ * - NOTAG_DOCTYPE
  * - NOTAG_COMMENT
  * - NOTAG_MSIF
  * - NOTAG_CNDT
- * - NOTAG_DOCTYPE
  * - NOTAG
  * 
- * 扩展节点类型：
+ * 扩展节点：
  * - MARK
  * - DATA
  */
@@ -1164,15 +1167,11 @@ hl_proto.captureArray = function () {
 // ...
 hl_proto.find = hl_proto.findAll = hl_proto.collect = function (filter) {
 
-  var check = function(){return true};
-  switch (typeof filter) {
-    case 'function':
-      check = filter;
-      break;
-    case 'string':
-      check = function(node){return node.is(filter)};
-      break;
-    default: break;
+  var check = filter;
+  if (typeof filter === 'string') {
+    check = function(node){return node.is(filter)};
+  } else if (typeof filter !== 'function') {
+    check = function(){return true};
   }
 
   return _.filter(this.toArray(), function(node) {
@@ -1331,7 +1330,7 @@ var attribute = /^\s*[^\s"'<>\/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/;
 var ncname = '[a-zA-Z_][\\w\\-\\.]*';
 var qnameCapture = "((?:" + ncname + "\\:)?" + ncname + ")";
 
-var notag = /^<!/;
+var none = /^<!/;
 var startTag = new RegExp("^<" + qnameCapture);
 var endTag = new RegExp("^<\\/" + qnameCapture + "\\s*>");
 
@@ -1347,35 +1346,27 @@ function parse(html) {
   var reCache = {};
   var stack = [];
   var tokens = new HtmlList();
-
   var text = '';
   var match = null;
 
   while (html) {
-    if (notag.test(html)) {
-      handleNoTag();
+    if (none.test(html)) {
+      handleNone();
       continue
     }
-
     if (match = html.match(endTag)) {
       handleEndTag(match);
       continue
     }
-
     if (match = html.match(startTag)) {
       handleStartTag(match);
       continue
     }
-    
     text += html[0];
     advance(1);
   }
-
-  match = null;
   handleText();
-
-  // console.log(tokens.toArray());
-
+  match = null;
   return tokens;
 
   function handleText () {
@@ -1395,27 +1386,22 @@ function parse(html) {
     return html + endFlag;
   }
 
-  function handleNoTag () {
-
+  function handleNone () {
     handleText();
-
     var match, source, type = null;
 
     // Comment:
     if (match = html.match(comment)) {
       type = "NOTAG_COMMENT";
     }
-
     // MSIf
     else if (match = html.match(MSIf)) {
       type = "NOTAG_MSIF";
     }
-
     // conditinalComment
     else if (match = html.match(cndtComment)) {
       type = "NOTAG_CNDT";
     }
-
     // Doctype
     else if (match = html.match(doctype)) {
       type = "NOTAG_DOCTYPE";
@@ -1432,13 +1418,15 @@ function parse(html) {
     tokens.append(new HtmlNode(source, type));
   }
 
-  // 处理开始标签
-  // 正则匹配的是开始标签的开始部分，即 '<tagname'
-  // 此函数将继续匹配后续部分：属性和结束标志 '>'
-  // 在遇到结束标志 '>' 前，每匹配到一个属性，就将其加入到属性数组
-  // 然后，使用属性、标签名等生成一个 HtmlNode，并添加到链表中
-  // 最后，会检测此开始标签是不是一个特殊的文本标签: textarea, style, script
-  // 如果是，将一次性获取标签内的全部内容（不包括结束标签），然后添加一个文本节点
+  /**
+   * 处理开始标签
+   * 正则匹配的是开始标签的开始部分，即 '<tagname'
+   * 此函数将继续匹配后续部分：属性和结束标志 '>'
+   * 在遇到结束标志 '>' 前，每匹配到一个属性，就将其加入到属性数组
+   * 然后，使用属性、标签名等生成一个 HtmlNode，并添加到链表中
+   * 最后，检测此开始标签是不是一个特殊的文本标签: textarea, style, script
+   * 如果是，将一次性获取标签内的全部内容（不包括结束标签），然后添加一个文本节点
+   */
   function handleStartTag (match) {
 
     handleText();

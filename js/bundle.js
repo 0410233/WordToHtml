@@ -5,7 +5,6 @@
     if ( !args.length ) return;
     
     var items=[];
-    var current = -1;
     var $els, evt, cls;
     _.each( args, function( item ) {
       if ( !item ) return;

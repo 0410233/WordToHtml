@@ -1,4 +1,4 @@
-;(function(window, document, _, $, parseHTML, undefined) {
+;(function(window, document, _, parseHTML, undefined) {
 
 //
 var log = console.log;
@@ -25,11 +25,11 @@ var canBeMerged = makeMap('a,b,u,i,span');
 // HTML5 tags https://html.spec.whatwg.org/multipage/indices.html#elements-3
 // Phrasing Content https://html.spec.whatwg.org/multipage/dom.html#phrasing-content
 var isNonPhrasingTag = makeMap(
-  'address,article,aside,base,blockquote,body,caption,col,colgroup,dd,' +
-  'details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form,' +
-  'h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,legend,li,menuitem,meta,' +
-  'optgroup,option,p,param,rp,rt,source,style,summary,tbody,td,tfoot,th,thead,' +
-  'title,tr,track'
+  'address,article,aside,base,blockquote,body,caption,col,colgroup,dd' +
+  ',details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form' +
+  ',h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,legend,li,menuitem,meta' +
+  ',optgroup,option,p,param,rp,rt,source,style,summary,tbody,td,tfoot,th,thead' +
+  ',title,tr,track'
 );
 
 // 将字符串 rgb(255,255,255) 转为数组 [255,255,255]
@@ -81,7 +81,7 @@ function DocHtml(html, options) {
 
   html = html || '';
   this._source = html;
-  // log( 'source: ' + html );
+  log( 'source: ' + html );
 
   this.init(options);
 
@@ -92,8 +92,8 @@ var dh_proto = DocHtml.prototype;
 
 dh_proto.do = function( fn ) {
 
-  // log('Open: '+fn);
-  // console.time('Do: '+fn);
+  log('Open: '+fn);
+  console.time('Do: '+fn);
 
   var args = _.toArray(arguments).slice(1);
 
@@ -101,7 +101,7 @@ dh_proto.do = function( fn ) {
     this[fn].apply(this, args);
   }
 
-  // console.timeEnd('Do: '+fn);
+  console.timeEnd('Do: '+fn);
   // log('End: '+fn);
 
   return this;
@@ -176,7 +176,7 @@ dh_proto.init = function (options) {
 // 主函数
 dh_proto.simplify = function() {
 
-  // console.time('Do: simplify');
+  console.time('Do: simplify');
 
   // 初始的清理工作
   // 包括清理空标签，移除文档头信息，清除注释、无用标签，简化标签属性等
@@ -210,8 +210,6 @@ dh_proto.simplify = function() {
 
   /* 收尾 */
 
-  this.do('cleanTableInner');
-
   this.do('wrapTable');
 
   // 将 <p><b> ... </b></p> 结构转换为 <h2> ... </h2>
@@ -223,17 +221,16 @@ dh_proto.simplify = function() {
   this.do('settlePuncs');
 
   // 最后一次清理空标签
-  // this.do('clearEmptyTags', 'br');
-  this.do('clearEmptyTags');
+  this.do('clearEmptyTags', 'br');
 
   // 最后一次清理 br 标签;
-  // this.do('clearBr');
+  this.do('clearBr');
 
   // this.do('switchTo', 'html');
   this.html = this._tokens.toString();
 
   // log(this.html);
-  // console.timeEnd('Do: simplify');
+  console.timeEnd('Do: simplify');
 
   return this;
 };
@@ -248,7 +245,7 @@ dh_proto.clearEmptyTags = function (empty) {
     switch (node.type) {
       case 'TAG_END':
         if (node.prevSolid('', empty) === node.match && !node.is('td,th,div')) {
-          // if (node.tagName === 'p') list.createSingle('br').insertBefore(node.match);
+          if (node.tagName === 'p') list.createSingle('br').insertBefore(node.match);
           list.remove(node.match, node);
         }
         break
@@ -312,7 +309,7 @@ dh_proto.removeHead = function () {
 dh_proto.cleanUp = function() {
 
   // ...
-  // this.do('clearBr');
+  this.do('clearBr');
 
   // 清除空标签
   this.do('clearEmptyTags');
@@ -383,10 +380,9 @@ dh_proto.cleanUp = function() {
       // 当 mso-list 存在时，使用属性 s-indent 保存 margin-left 值, 
       if (_.has(style, 'mso-list')) {
         attr['s-indent'] = '' + (parseFloat(style['margin-left']) || 0);
-        attr['s-list'] = style['mso-list'].trim();
       }
     }
-    return _.pick(attr, ['src','href','colspan','rowspan','s-hue','s-indent','s-list']);
+    return _.pick(attr, ['src','href','colspan','rowspan','s-hue','s-indent']);
   }
 
   this.mergeTags();
@@ -690,13 +686,13 @@ dh_proto.mergeText = function () {
 // 转换列表元素 ul>li
 dh_proto.convertList = function () {
 
-  var levelEqual = function (node1, node2) {
-    return Math.abs(node1.attr('s-indent') - node2.attr('s-indent')) < 5 || node1.attr('s-list') === node2.attr('s-list');
+  var levelEqual = function (level1, level2) {
+    return Math.abs(level1 - level2) < 5;
   };
   // log(this._tokens.captureArray());
 
   // 将所有带有 s-indent 属性的标签转为 li
-  // 与 li 标签紧邻的 table 标签会被认为是属于 li 的
+  // 与 li 标签紧邻的非 li 标签会被认为是属于 li 的
   this._tokens.each(function (node, list) {
 
     if (node.type !== 'TAG_START') return true;
@@ -704,7 +700,7 @@ dh_proto.convertList = function () {
     var prev, li;
     if (node.attr('s-indent')) {
       node.tagRename('li');
-    } else if (node.tagName === 'table' && (prev = node.prevSibling('li'))) {
+    } else if (prev = node.prevSibling('li')) {
       var phrasingTags = prev.findAll(function(node) {
         return isNonPhrasingTag(node.tagName);
       });
@@ -715,8 +711,6 @@ dh_proto.convertList = function () {
 
     return true
   });
-
-  // log(this._tokens.toString());
 
   var listOptions = this.options.list || {};
   var listType = listOptions.list_type || 'ul';
@@ -737,10 +731,11 @@ dh_proto.convertList = function () {
     /**
      * 循环查找当前 li 的正确位置
      */
+    var indent = node.attr('s-indent');
     var prev;
     while (true) {
       // 没有相邻的 li 或与相邻 li 同级，则退出循环
-      if (!(prev = node.prevSibling('li')) || levelEqual(node, prev)) break;
+      if (!(prev = node.prevSibling('li')) || levelEqual(indent, prev.attr('s-indent'))) break;
       // 使用“包裹->融合”方式，将当前 li 送入上一个 li 中
       node.wrap('li').mergeUp();
       // 再次使用 ul 包裹 li，并尝试向上融合
@@ -752,21 +747,21 @@ dh_proto.convertList = function () {
     return true
   });
 
-  // 清除所有 s-indent、s-list 属性
+  // 清除所有 s-indent 属性
   this._tokens.each(function(node, list) {
     if (node.type === 'TAG_START' && node.attr('s-indent')) {
       node.attr('s-indent', '');
-      node.attr('s-list', '');
     }
   });
 
   if (listOptions.list_style === 'specification') {
     this._tokens.each(function(node, list) {
       if (node.tagName === 'ul' && node.type === 'TAG_START') {
-        node.addClass('specifications');
+        node.wrap('div').addClass('specification');
         return true
       }
       if (node.tagName === 'li' && node.type === 'TAG_START' && node.parent().tagName === 'ul') {
+
         var next = node.next;
         var text = list.create('');
         var divLeft = list.createStart('div');
@@ -804,8 +799,7 @@ dh_proto.rebuildTable = function () {
         break;
       case 'TAG_SINGLE':
         if (!last) break;
-        // if (node.tagName === 'img' || node.tagName === 'br') node.remove();
-        if (node.tagName === 'img') node.remove();
+        if (node.tagName === 'img' || node.tagName === 'br') node.remove();
         break;
       case 'TAG_END':
         if (!last) break;
@@ -840,16 +834,25 @@ dh_proto.rebuildTable = function () {
       }
 
       var textAll = node.findAll('.TEXT');
-      if (textAll.length > 1) {
-        var hasB = false;
-        for (var i = 0; i < textAll.length; i++) {
-          if (textAll[i].topWrapper('b')) {
-            hasB = true
-          } else if(textAll[i].source.replace(/\W/g, '')) {
-            return true
-          }
+      var isth = !!textAll.length;
+      for (var i = 0; i < textAll.length; i++) {
+        if(textAll[i].source.replace(/\W/g, '') && !textAll[i].topWrapper('b')) {
+          isth = false;
+          break;
         }
-        hasB && node.tagRename('th');
+      }
+      if (isth) {
+        node.tagRename('th');
+        list.remove(node.findAll('b'));
+        var pArray = node.findAll('p');
+        if (pArray.length) {
+          for (var i = 1; i < pArray.length; i+=2) {
+            if(pArray[i].nextSolid() !== node) {
+              pArray[i].afterInsert(list.createSingle('br'));
+            }
+          }
+          list.remove(pArray);
+        }
       }
     }
   });
@@ -1102,28 +1105,6 @@ dh_proto.rebuildTable = function () {
   }
 };
 
-// 
-dh_proto.cleanTableInner = function () {
-  this._tokens.each(function(node, list) {
-    if (node.is('td.TAG_END, th.TAG_END, caption.TAG_END')) {
-
-      var pArray = node.findAll('p.TAG_END');
-      pArray.pop();
-      if (pArray.length) {
-        for (var i = 0; i < pArray.length; i++) {
-          pArray[i].afterInsert(list.createSingle('br'));
-        }
-      }
-
-      list.remove(node.findAll('p'));
-
-      if (node.tagName === 'th' || node.tagName === 'caption') {
-        list.remove(node.findAll('b'));
-      }
-    }
-  });
-};
-
 /**
  * 假设：
  * 1. 图片信息都在 td 标签内
@@ -1132,8 +1113,9 @@ dh_proto.cleanTableInner = function () {
 dh_proto.convertImages = function () {
 
   var imageOptions = this.options.image || {};
+
   var marks = [
-    ['img_name',  /(?:图片名称|图片名|名称|产品图片)\s*:\s*/i],
+    ['img_name',  /(?:图片名称|图片名|名称|图片文件|图片文件名称|文件名称?)\s*:\s*/i],
     ['img_alt',   /alt\s*:\s*/i],
     ['img_info',  /(?:描述|简述)\s*:\s*/i],
     ['img_title', /(?:(?:图片)?标题|显示名称)\s*:\s*/i]
@@ -1159,21 +1141,17 @@ dh_proto.convertImages = function () {
       key = key.trim().toLowerCase();
       value = value.trim();
       if (key === 'img_info') {
-        var colonPos = value.indexOf(':');
-        var imageno = '';
-        if (colonPos > 0 && colonPos < value.length) {
-          imageno = value.substring(0, colonPos).trim();
+        var colon = value.indexOf(':');
+        if (colon > 0 && colon < value.length) {
+          var imageno = value.substring(0, colon).trim();
           if (imageno) {
-            value = '<b>'+imageno+'</b>'+': '+value.substring(colonPos+1).trim();
+            value = '<b>'+imageno+'</b>'+': '+value.substring(colon+1).trim();
           } else {
-            value = value.substring(colonPos+1).trim();
+            value = value.substring(colon+1).trim();
           }
         }
-        fields[key] = value;
-        fields['img_info_stripped'] = $('<div>'+value+'</div>').text();
-      } else {
-        fields[key] = value;
       }
+      fields[key] = value;
       return '';
     });
 
@@ -1184,43 +1162,25 @@ dh_proto.convertImages = function () {
     data.fields = fields;
     data.fields['img_path'] = imageOptions['img_path'] || '/images/';
     data.fields['lightbox'] = 'lb';
-    data.fields['img_placeholder'] = imageOptions['img_placeholder'];
 
     data.template = '<img src="{img_path}{img_name}" alt="{img_alt}">';
 
     if (imageOptions.lazyload === 'on') {
-      data.template = 'alt="{img_alt}" data-src="{img_path}{img_name}">';
       if (imageOptions.gallery_style === 'carousel') {
-        data.template = 'class="owl-lazy" ' + data.template;
+        data.template = '<img class="owl-lazy" data-src="{img_path}{img_name}" alt="{img_alt}">';
       } else {
-        if (imageOptions.img_placeholder) {
-          data.template = 'src="{img_placeholder}" ' + data.template;
-        }
-        data.template = 'class="lazyload" ' + data.template;
+        data.template = '<img class="lazyload" data-src="{img_path}{img_name}" alt="{img_alt}">';
       }
-      data.template = '<img ' + data.template;
     }
 
     if (imageOptions.lightbox === 'on') {
-      data.template = '<a data-lightbox="{lightbox}" href="{img_path}{img_name}" data-title="{img_info_stripped}">' + data.template + '</a>';
+      data.template = '<a data-lightbox="{lightbox}" href="{img_path}{img_name}">' + data.template + '</a>';
     }
 
-    // data.template = '<div class="img-wrapper">' + data.template + '</div>';
-
-    var imgMaxClass = imageOptions['img_max'] === 'class' ? ' ' + imageOptions['img_max_class'] : '';
-    var imgMaxWidth = '';
-    if (imageOptions['img_max'] === 'width' && parseFloat(imageOptions['img_max_width'])) {
-      imgMaxWidth = ' style="max-width:' + parseFloat(imageOptions['img_max_width']) + 'px"';
-    }
+    // data.template = '<div class="k-img"><div class="img-wrapper">' + data.template + '</div></div>';
 
     if (data.fields.img_info) {
-      data.template = '' +
-        '<div class="k-figure' + imgMaxClass + '"' + imgMaxWidth + '>' +
-          '<div class="k-img">' + data.template + '</div>' + 
-          '<p class="k-figcaption">{img_info}</p>' +
-        '</div>';
-    } else {
-      data.template = '<div class="k-img' + imgMaxClass + '"' + imgMaxWidth + '>' + data.template + '</div>';
+      data.template += '<p>{img_info}</p>';
     }
 
     data.insertBefore(node);
@@ -1331,16 +1291,19 @@ dh_proto.arrangeImages = function () {
       // 添加 lightbox 分组 id
       collect[i][0].fields.lightbox = lb;
     }
+    var gridClass = 'grid grid--1';
     if (collect.length > 1) {
-      for (i = 0; i < collect.length; i++) {
-        collect[i] = wrap(collect[i], 'div', 'grid-item');
+      gridClass += ' grid--gutter';
+      if (collect.length%2 === 0) {
+        gridClass += ' grid--md-2';
+      } else {
+        gridClass += ' grid--md-3';
       }
-      var classList = 'layout-grid grid-gutter';
-      if (collect.length === 4) {
-        classList += ' grid-xl-4';
-      }
-      collect = wrap(collect, 'div', classList);
     }
+    for (i = 0; i < collect.length; i++) {
+      collect[i] = wrap(collect[i], 'div', 'cell');
+    }
+    collect = wrap(collect, 'div', gridClass);
     return _.flatten(collect);
   }
 
@@ -1419,13 +1382,15 @@ dh_proto.arrangeImages = function () {
 
 // ...
 dh_proto.wrapTable = function () {
-  var wrapperClass = this.options.table.wrapper_class;
-  this._tokens.each(function(node, list){
-    if (node.tagName === 'table' && node.type === 'TAG_END') {
-      node.addClass('k-table');
-      wrapperClass && node.wrap('div').addClass(wrapperClass);
-    }
-  });
+  if (this.options && this.options.table && this.options.table.wrap_table === 'on') {
+    var clsName = this.options.table.wrapper_class || 'table-wrapper';
+    this._tokens.each(function(node, list){
+      if (node.tagName === 'table' && node.type === 'TAG_END') {
+        node.addClass('k-table');
+        node.wrap('div').addClass(clsName);
+      }
+    });
+  }
 };
 
 // 移动行内标签头尾的标点符号和空格到合适的位置
@@ -1440,46 +1405,62 @@ dh_proto.settlePuncs = function () {
     node.source = node.source.replace(/\s+/g, ' ');
 
     var match;
-    
-    // 前面的标点往前移
     var sibling = node.prev;
     if (sibling.type === 'TAG_START') {
       if (isInline(sibling.tagName) && (match = node.source.match(/^[\s,\.?;:!]+/))) {
         node.source = node.source.substring(match[0].length);
-        // sibling = node.prev;
-        while(sibling.prev) {
-          sibling = sibling.prev;
-          if (sibling.type === 'TAG_START' && isInline(sibling.tagName)) {
-            continue;
+        sibling = node.prev;
+        while(true) {
+          if (!sibling.type) break;
+          if (sibling.type === 'TAG_START') {
+            if (isInline(sibling.tagName)) {
+              sibling = sibling.prev;
+              continue
+            } else {
+              break
+            }
           }
-          break;
-        }
-        if (sibling.type === 'TEXT') {
-          sibling.source = (sibling.source + match[0]).replace(/\s+/, ' ');
-        } else {
-          sibling.afterInsert(list.create(match[0]));
+          if (sibling.type === 'TAG_END') {
+            if (isInline(sibling.tagName)) {
+              sibling.afterInsert(list.create(match[0]));
+            }
+            break
+          }
+          if (sibling.type === 'TEXT') {
+            sibling.source = (sibling.source + match[0]).replace(/\s+/, ' ');
+            break
+          }
         }
       } else if (!isInline(node.tagName) && (match = node.source.match(/^\s+/))) {
         node.source = node.source.substring(match[0].length);
       }
     }
 
-    // 后面的标点往后移
     sibling = node.next;
     if (sibling.type === 'TAG_END') {
       if (isInline(sibling.tagName) && (match = node.source.match(/[\s,\.?;:!]+$/))) {
         node.source = node.source.substring(0, match.index);
-        while(sibling.next) {
-          sibling = sibling.next;
-          if (sibling.type === 'TAG_END' && isInline(sibling.tagName)) {
-            continue;
+        sibling = node.next;
+        while(true) {
+          if (!sibling.type) break;
+          if (sibling.type === 'TAG_END') {
+            if (isInline(sibling.tagName)) {
+              sibling = sibling.next;
+              continue
+            } else {
+              break
+            }
           }
-          break;
-        }
-        if (sibling.type === 'TEXT') {
-          sibling.source = match[0] + sibling.source;
-        } else {
-          sibling.beforeInsert(list.create(match[0]));
+          if (sibling.type === 'TAG_START') {
+            if (isInline(sibling.tagName)) {
+              sibling.beforeInsert(list.create(match[0]));
+            }
+            break
+          }
+          if (sibling.type === 'TEXT') {
+            sibling.source = match[0] + sibling.source;
+            break
+          }
         }
       } else if (!isInline(node.tagName) && /\s+$/.test(node.source)) {
         node.source = node.source.replace(/\s+$/, '');
@@ -1487,8 +1468,7 @@ dh_proto.settlePuncs = function () {
     }
   });
 
-  // this.clearEmptyTags('br');
-  this.clearEmptyTags();
+  this.clearEmptyTags('br');
 
   return this
 };
@@ -1522,4 +1502,4 @@ dh_proto.clearBr = function () {
 
 window.DocHtml = DocHtml;
 
-})( window, document, _, jQuery, parseHTML );
+})( window, document, _, parseHTML );
