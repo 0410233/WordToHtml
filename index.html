@@ -120,22 +120,28 @@
         };
 
         input.addEventListener('paste', function(e){
-          console.log('text/xml');
-          console.log(e.clipboardData.getData('text/xml'));
-          console.log('application/xml');
-          console.log(e.clipboardData.getData('application/xml'));
-          console.log('application/xhtml+xml');
-          console.log(e.clipboardData.getData('application/xhtml+xml'));
-          console.log('text/html');
-          console.log(e.clipboardData.getData('text/html'));
-          return;
+          // console.log('text/xml');
+          // console.log(e.clipboardData.getData('text/xml'));
+          // console.log('application/xml');
+          // console.log(e.clipboardData.getData('application/xml'));
+          // console.log('application/xhtml+xml');
+          // console.log(e.clipboardData.getData('application/xhtml+xml'));
+          // console.log('text/html');
+          // console.log(e.clipboardData.getData('text/html'));
+          // return;
 
           var source = e.clipboardData.getData('text/html');
-          if (!source.trim()) {
-            source = this.value;
-          }
+          // if (!source.trim()) {
+          //   source = this.value;
+          // }
           source = source.trim();
           this._source = source;
+        });
+
+        input.addEventListener('change', function() {
+          if (!this._source && this.value) {
+            this._source = this.value.trim();
+          }
         });
 
         analyzeBtn.onclick = function() {
