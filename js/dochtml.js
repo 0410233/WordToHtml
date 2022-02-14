@@ -140,30 +140,32 @@ dh_proto.init = function (options) {
   }
 
   // 清除注释 和 <![if ...]><![endif]> 结构
-  html = html.replace(/<!--[\s\S]*?-->|<!\[if [^\]]*?\]>[\s\S]*?<!\[endif\]>/g, '')
-    // 替换任意空白字符为空格
-    .replace(/(?:\s|&nbsp;)+/g, ' ')
-    // 替换中文符号
-    .replace(/([【】（）：“”‘’；、，。？！])/g, function($0, $1) {
-      switch( $1 ) {
-        case '【'  : return '[';
-        case '】'  : return ']';
-        case '（' : return '(';
-        case '）' : return ')';
-        case '：' : return ':';
-        case '“'  :
-        case '”'  : return '"';
-        case '‘'  :
-        case '’'  : return '\'';
-        case '；' : return ';';
-        case '、' :
-        case '，' : return ',';
-        case '。' : return '.';
-        case '？' : return '?';
-        case '！' : return '!';
-        default: return $1;
-      }
-    });
+  html = html.replace(/<!--[\s\S]*?-->|<!\[if [^\]]*?\]>[\s\S]*?<!\[endif\]>/g, '');
+  
+  // 替换任意空白字符为空格
+  html = html.replace(/(?:\s|&nbsp;)+/g, ' ');
+
+  // 替换中文符号
+  // html = html.replace(/([【】（）：“”‘’；、，。？！])/g, function($0, $1) {
+  //   switch( $1 ) {
+  //     case '【'  : return '[';
+  //     case '】'  : return ']';
+  //     case '（' : return '(';
+  //     case '）' : return ')';
+  //     case '：' : return ':';
+  //     case '“'  :
+  //     case '”'  : return '"';
+  //     case '‘'  :
+  //     case '’'  : return '\'';
+  //     case '；' : return ';';
+  //     case '、' :
+  //     case '，' : return ',';
+  //     case '。' : return '.';
+  //     case '？' : return '?';
+  //     case '！' : return '!';
+  //     default: return $1;
+  //   }
+  // });
 
   this.html = html;
   // log( 'html: ' + html );
@@ -187,7 +189,7 @@ dh_proto.simplify = function() {
 
   // 清理备注（以[]包裹的文字）
   // 清除，或转为标记
-  this.do('clearMemos');
+  // this.do('clearMemos');
 
   // 清除所有的 span
   this.do('clearSpan');
@@ -195,7 +197,7 @@ dh_proto.simplify = function() {
   // 查找第一个 <b><i><u> content </u></i></b>
   // 或第一个 <b><i> content </i></b>
   // 转换为 <strong> content </strong>
-  this.do('markStrong');
+  // this.do('markStrong');
 
   // 转换列表元素
   this.do('convertList');
@@ -204,7 +206,7 @@ dh_proto.simplify = function() {
   this.do('rebuildTable');
 
   // ...
-  this.do('arrangeImages');
+  // this.do('arrangeImages');
 
   // log(this._tokens.toArray());
 
@@ -213,7 +215,7 @@ dh_proto.simplify = function() {
   this.do('wrapTable');
 
   // 将 <p><b> ... </b></p> 结构转换为 <h2> ... </h2>
-  this.do('convertPB', 'h2');
+  // this.do('convertPB', 'h2');
 
   // log(this._tokens.toString());
 
